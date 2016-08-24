@@ -1,10 +1,5 @@
 require 'spec_helper'
 
-RSpec.configure do |c|
-  c.filter_run_excluding :broken => true
-  c.filter_run_excluding :todo => true
-end
-
 describe Sprockets::Less do
   before :each do
     @root   = create_construct
