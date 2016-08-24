@@ -8,10 +8,6 @@ module Sprockets
         GLOB = /\*|\[.+\]/
         IMPORT_SCANNER = /^\s*@import\s*['"]([^'"]+)['"]\s*;/.freeze
 
-        def initialize(context)
-         @context = context
-        end
-
         def dependencies
           @dependencies ||= []
         end
@@ -19,7 +15,7 @@ module Sprockets
         def context
           @context
         end
-
+        
         #Assemble dependencies for the context
         def process_dependencies(data, filename, less_options, css_options)
           @context = context = less_options[:custom][:sprockets_context]

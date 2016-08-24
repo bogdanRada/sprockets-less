@@ -200,9 +200,9 @@ module Sprockets
         end
 
         def custom_importer_class
-          Sprockets::Less::V2::Importer.new(context)
+          @custom_importer_class ||= Sprockets::Less::V2::Importer.new
         end
-
+        
         def fetch_sprockets_options
           {
             context: context,
