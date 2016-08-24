@@ -5,6 +5,7 @@ require 'sprockets/less/registration'
 
 require 'less'
 
+require 'cgi'
 require 'json'
 require 'pathname'
 

@@ -5,8 +5,8 @@ module Sprockets
     module V4
       # class used for importing files from SCCS and SASS files
       class Importer < Sprockets::Less::V3::Importer
-        def syntax_mime_type(path)
-          "text/#{syntax(path)}"
+        def syntax_mime_type
+          "text/#{syntax}"
         end
 
         def engine_from_glob(glob, base_path, options)
@@ -19,7 +19,7 @@ module Sprockets
           return nil if engine_imports.empty?
           ::Sass::Engine.new engine_imports, options.merge(
             filename: base_path.to_s,
-            syntax: syntax(base_path.to_s),
+            syntax: syntax,
             importer: self,
             custom: { sprockets_context: context }
           )
@@ -46,7 +46,7 @@ module Sprockets
 
         def check_path_before_process(context, path, a = nil)
           if path.to_s.start_with?('file://')
-            path = Pathname.new(path.to_s.gsub(/\?type\=(.*)/, "?type=text/#{syntax(path)}"))  # @TODO : investigate why sometimes file:/// URLS are ending in ?type=text instead of ?type=text/scss
+            path = Pathname.new(path.to_s.gsub(/\?type\=(.*)/, "?type=text/#{syntax}"))  # @TODO : investigate why sometimes file:/// URLS are ending in ?type=text instead of ?type=text/scss
             asset = context.environment.load(path) # because resolve now returns file://
             asset.filename
           else
@@ -69,7 +69,7 @@ module Sprockets
 
         def get_context_transformers(context, content_type, path)
           available_transformers =  context.environment.transformers[content_type]
-          additional_transformers = available_transformers.key?(syntax_mime_type(path)) ? available_transformers[syntax_mime_type(path)] : []
+          additional_transformers = available_transformers.key?(syntax_mime_type) ? available_transformers[syntax_mime_type] : []
           additional_transformers.is_a?(Array) ? additional_transformers : [additional_transformers]
           css_transformers = available_transformers.key?('text/css') ? available_transformers['text/css'] : []
           css_transformers = css_transformers.is_a?(Array) ? css_transformers : [css_transformers]

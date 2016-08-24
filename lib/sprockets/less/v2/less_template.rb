@@ -108,19 +108,27 @@ module Sprockets
           run
         end
 
+
+          def less_engine(data, less_options, css_options)
+          css = Sprockets::Less::Utils.module_include(::Less::Tree, @functions) do
+            if ::Less.const_defined? :Engine
+              engine = ::Less::Engine.new(data)
+            else
+              parser  = ::Less::Parser.new(less_options)
+              engine = parser.parse(data)
+            end
+            engine.to_css(css_options)
+          end
+        end
+
         def run
           data = Sprockets::Less::Utils.read_file_binary(filename, options)
-          process_dependencies(data)
-          engine = ::Less::Parser.new(less_options)
-          tree = nil
-          css = Sprockets::Less::Utils.module_include(::Less::Tree, @functions) do
-            tree = engine.parse(data)
-            css = tree.to_css(css_options)
-          end
+          new_data, processed_data, dependencies = process_dependencies(data)
+          css  = less_engine(new_data, less_options, css_options)
 
           less_dependencies = Set.new([filename])
           if context.respond_to?(:metadata)
-            fetch_importer_class.dependencies.map do |dependency|
+            dependencies.map do |dependency|
               less_dependencies << dependency
               context.metadata[:dependencies] << Sprockets::URIUtils.build_file_digest_uri(dependency)
             end
@@ -150,16 +158,22 @@ module Sprockets
           end
           options = options.merge(other_options)
           options[:load_paths] = options[:load_paths].is_a?(Array) ? options[:load_paths] : []
+
+          if (load_paths = options[:paths]) && (other_paths = other_options[:paths])
+            options[:load_paths] = options[:load_paths]+ other_paths + load_paths
+          end
           options[:load_paths] = options[:load_paths].concat(context.environment.paths)
           options
         end
 
         def default_less_config
-          Sprockets::Less.options.dup
+          @default_less_config ||= Sprockets::Less.options.dup
         end
 
         def default_less_options
-          less = default_less_config
+          default_less_config[:load_paths] =  default_less_config[:load_paths].is_a?(Array) ? default_less_config[:load_paths] : []
+          default_less_config[:load_paths] = default_less_config[:load_paths].concat(default_less_config[:paths]) if default_less_config[:paths].is_a?(Array)
+          less =  default_less_config
           less = merge_less_options(less.dup, @less_config) if defined?(@less_config) && @less_config.is_a?(Hash)
           less
         end
@@ -186,19 +200,16 @@ module Sprockets
         end
 
         def custom_importer_class
-          Sprockets::Less::V2::Importer.new
+          Sprockets::Less::V2::Importer.new(context)
         end
 
         def fetch_sprockets_options
-          sprockets_options = {
+          {
             context: context,
             environment: context.environment,
+            load_paths: context.environment.paths + default_less_options[:load_paths],
             dependencies: context.respond_to?(:metadata) ? context.metadata[:dependencies] : []
           }
-          if context.respond_to?(:metadata)
-            sprockets_options.merge(load_paths: context.environment.paths + default_less_options[:load_paths])
-          end
-          sprockets_options
         end
 
         def less_options
@@ -209,6 +220,7 @@ module Sprockets
           filename: filename,
           line: 1,
           syntax: self.class.syntax,
+          load_paths: sprockets_options[:load_paths],
           cache: true,
           cache_store: build_cache_store(context),
           importer: importer,

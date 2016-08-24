@@ -9,7 +9,9 @@ module Less
 
     def initialize(options)
       @tree = Less.instance_eval { @loader.require('less/tree') }
-    #  @sprockets_context = options[:importer].context
+      @importer = options[:importer]
+      @sprockets_context = @importer.context
+      extend_js Sprockets::Helpers if defined?(Sprockets::Helpers)
       extend_js Sprockets::Less::Utils.get_class_by_version("Functions")
     end
 

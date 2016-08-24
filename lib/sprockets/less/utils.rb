@@ -8,6 +8,10 @@ module Sprockets
           Sprockets::VERSION
         end
 
+        def minor_version_of_sprockets
+          full_version_of_sprockets.split('.')[1].to_i
+        end
+
         def version_of_sprockets
           full_version_of_sprockets.split('.')[0].to_i
         end

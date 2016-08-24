@@ -8,58 +8,72 @@ module Sprockets
         GLOB = /\*|\[.+\]/
         IMPORT_SCANNER = /^\s*@import\s*['"]([^'"]+)['"]\s*;/.freeze
 
-        attr_reader :dependencies
+        def initialize(context)
+         @context = context
+        end
+
+        def dependencies
+          @dependencies ||= []
+        end
+
+        def context
+          @context
+        end
 
         #Assemble dependencies for the context
         def process_dependencies(data, filename, less_options, css_options)
-          @dependencies = []
-          context = less_options[:custom][:sprockets_context]
+          @context = context = less_options[:custom][:sprockets_context]
+
+          final_css = ''.dup
           import_paths = data.scan(Regexp.union(IMPORT_SCANNER, GLOB)).flatten.compact.uniq
           import_paths.each do |path|
-            find_relative(path, filename, less_options, css_options)
+            css =  find_relative(path, filename, less_options, css_options)
+            data = data.gsub(/^\s*@import\s*['"]#{Regexp.escape(path)}['"]\s*;/, css)
+
+            final_css << css
           end
-        end
-
-        def find_relative(path, base_path, less_options, css_options)
-          if path.to_s =~ GLOB
-            engine_from_glob(path, base_path, less_options, css_options)
-          else
-            engine_from_path(path, base_path, less_options, css_options)
-          end
+          [data, final_css, dependencies]
         end
 
 
-
-        def mtime(path, _options)
-          if pathname = resolve(path)
-            pathname.mtime
-          end
-        rescue
-          nil
-        end
-
-        def key(path, _options)
-          path = Pathname.new(path)
-          ["#{self.class.name}:#{path.dirname.expand_path}", path.basename]
-        end
 
         protected
+
+        def find_relative(path, base_path, less_options, css_options)
+          css = nil
+          if path.to_s =~ GLOB
+            css = engine_from_glob(path, base_path, less_options, css_options)
+          else
+            css = engine_from_path(path, base_path, less_options, css_options)
+          end
+          css.to_s
+        end
 
         # Create a Sass::Engine from the given path.
         def engine_from_path(path, base_path, less_options, css_options)
           context = less_options[:custom][:sprockets_context]
-          (pathname = resolve(context, path, base_path)) || (return nil)
+          (pathname = resolve(context, path, base_path, less_options))  || (return nil)
           context.depend_on pathname
-          @dependencies << pathname
-          engine = ::Less::Parser.new(less_options.merge(
-          filename: pathname.to_s,
-          syntax: syntax(pathname),
-          importer: self,
-          custom: { sprockets_context: context }
-          ))
+          dependencies << pathname
+          data_to_parse = evaluate(context, pathname)
+          css = less_engine(data_to_parse, pathname, context,  less_options, css_options)
+          css.nil? || css.empty? ? data_to_parse : css
+        end
 
-          tree = engine.parse(evaluate(context, pathname))
-          tree.to_css(css_options)
+
+        def less_engine(data, filename, context,  less_options, css_options)
+          if ::Less.const_defined? :Engine
+            engine = ::Less::Engine.new(data)
+          else
+            parser  = ::Less::Parser.new(less_options.merge(
+            filename: filename.to_s,
+            syntax: syntax,
+            importer: self,
+            custom: { sprockets_context: context }
+            ))
+            engine = parser.parse(data)
+          end
+          engine.to_css(css_options)
         end
 
         # Create a Sass::Engine that will handle importing
@@ -68,25 +82,19 @@ module Sprockets
           context = less_options[:custom][:sprockets_context]
           engine_imports = resolve_glob(context, glob, base_path).reduce(''.dup) do |imports, path|
             context.depend_on path
-            @dependencies << path
+            dependencies << path
             relative_path = path.relative_path_from Pathname.new(base_path).dirname
             imports << %(@import "#{relative_path}";\n)
           end
           return nil if engine_imports.empty?
-          engine = ::Less::Parser.new(less_options.merge(
-          filename: pathname.to_s,
-          syntax: syntax(pathname),
-          importer: self,
-          custom: { sprockets_context: context }
-          ))
-          tree = engine.parse(engine_imports)
-          tree.to_css(css_options)
+          css = less_engine(engine_imports, base_path, context, less_options, css_options)
+          css.nil? || css.empty? ? engine_imports : css
         end
 
         # Finds an asset from the given path. This is where
         # we make Sprockets behave like Sass, and import partial
         # style paths.
-        def resolve(context, path, base_path)
+        def resolve(context, path, base_path, less_options)
           paths, _root_path = possible_files(context, path, base_path)
           paths.each do |file|
             context.resolve(file.to_s) do |found|
@@ -121,7 +129,16 @@ module Sprockets
           path      = Pathname.new(path)
           base_path = Pathname.new(base_path).dirname
           partial_path = partialize_path(path)
-          additional_paths = [Pathname.new("#{path}.css"), Pathname.new("#{partial_path}.css"), Pathname.new("#{path}.css.#{syntax(path)}"), Pathname.new("#{partial_path}.css.#{syntax(path)}")]
+          additional_paths = [
+            Pathname.new("#{path}.css"),
+            Pathname.new("#{partial_path}.css"),
+            Pathname.new("#{path}.css.#{syntax}"),
+            Pathname.new("#{partial_path}.css.#{syntax}"),
+            Pathname.new("#{path}.css.#{syntax}.erb"),
+            Pathname.new("#{partial_path}.css.#{syntax}.erb"),
+            Pathname.new("#{path}.#{syntax}.erb"),
+            Pathname.new("#{partial_path}.#{syntax}.erb")
+          ]
           paths = additional_paths.concat([path, partial_path])
 
           # Find base_path's root
@@ -151,11 +168,11 @@ module Sprockets
         end
 
         # Returns the Sass syntax of the given path.
-        def syntax(path)
-          path.to_s.include?('.css') ? :css : :less
+        def syntax
+          :less
         end
 
-        def syntax_mime_type(_path)
+        def syntax_mime_type
           'text/css'
         end
 

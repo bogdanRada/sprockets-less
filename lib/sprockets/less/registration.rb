@@ -41,6 +41,7 @@ module Sprockets
         end
       end
 
+
       def register_sprockets_v3_common
         _register_mime_types(mime_type:  "application/less+ruby", extensions: [".less.erb", ".css.less.erb"])
         register_bundle_metadata_reducer 'text/css', :less_dependencies, Set.new, :+
