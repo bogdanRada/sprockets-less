@@ -15,22 +15,29 @@ module Sprockets
         def context
           @context
         end
-        
+
+        def fetch_import_paths(data)
+          data.scan(Regexp.union(IMPORT_SCANNER, GLOB)).flatten.compact.uniq
+        end
+
+        def fetch_all_dependencies(data, filename, less_options, css_options)
+          process_dependencies(data, filename, less_options, css_options)
+          [data, dependencies]
+        end
+
         #Assemble dependencies for the context
         def process_dependencies(data, filename, less_options, css_options)
           @context = context = less_options[:custom][:sprockets_context]
 
           final_css = ''.dup
-          import_paths = data.scan(Regexp.union(IMPORT_SCANNER, GLOB)).flatten.compact.uniq
+          import_paths = fetch_import_paths(data)
           import_paths.each do |path|
-            css =  find_relative(path, filename, less_options, css_options)
-            data = data.gsub(/^\s*@import\s*['"]#{Regexp.escape(path)}['"]\s*;/, css)
-
+            css = find_relative(path, filename, less_options, css_options)
+            data.gsub!(/^\s*@import\s*['"]#{Regexp.escape(path)}['"]\s*;/, css)
             final_css << css
           end
-          [data, final_css, dependencies]
+          final_css
         end
-
 
 
         protected
@@ -52,7 +59,18 @@ module Sprockets
           context.depend_on pathname
           dependencies << pathname
           data_to_parse = evaluate(context, pathname)
-          css = less_engine(data_to_parse, pathname, context,  less_options, css_options)
+          import_paths =  fetch_import_paths(data_to_parse)
+          if import_paths.size > 0
+            import_paths.each do |import_path|
+              css = find_relative(import_path, pathname, less_options, css_options)
+              data_to_parse.gsub!(/^\s*@import\s*['"]#{Regexp.escape(import_path)}['"]\s*;/, css)
+            end
+          end
+          begin
+            css = less_engine(data_to_parse, pathname, context,  less_options, css_options)
+          rescue => e
+            css = e.message =~ /is undefined/ ? data_to_parse : nil
+          end
           css.nil? || css.empty? ? data_to_parse : css
         end
 

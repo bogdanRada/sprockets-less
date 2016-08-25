@@ -123,7 +123,7 @@ module Sprockets
 
         def run
           data = Sprockets::Less::Utils.read_file_binary(filename, options)
-          new_data, processed_data, dependencies = process_dependencies(data)
+          new_data, dependencies = process_dependencies(data)
           css  = less_engine(new_data, less_options, css_options)
 
           less_dependencies = Set.new([filename])
@@ -149,7 +149,7 @@ module Sprockets
 
 
         def process_dependencies(data)
-          fetch_importer_class.process_dependencies(data, filename, less_options, css_options)
+          fetch_importer_class.fetch_all_dependencies(data, filename, less_options, css_options)
         end
 
         def merge_less_options(options, other_options)
@@ -202,7 +202,7 @@ module Sprockets
         def custom_importer_class
           @custom_importer_class ||= Sprockets::Less::V2::Importer.new
         end
-        
+
         def fetch_sprockets_options
           {
             context: context,
