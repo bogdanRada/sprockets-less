@@ -76,7 +76,7 @@ describe Sprockets::Less do
     @assets.file 'dep.css', "/*\n *= require subdep\n */"
     @assets.file 'subdep.css.less', "@color: blue;\nbody { color: @color; }"
     asset = @env['main.css']
-    expect(asset.to_s).to eq("body {\n  color: #0000ff;\n}\n/*\n\n */\n")
+    expect(asset.to_s).to include("body {\n  color: #0000ff;\n}\n")
   end
 
   it 'imports files with additional processors' do
@@ -260,7 +260,7 @@ describe Sprockets::Less do
 
     @env['main.css'].to_s
     if Sprockets::Less::Utils.version_of_sprockets < 3
-      sass_cache = cache.detect { |key, value| value['pathname'] =~ /main\.css\.less/ }    
+      sass_cache = cache.detect { |key, value| value['pathname'] =~ /main\.css\.less/ }
     else
       sass_cache = cache.detect { |key, value| value =~ /main\.css\.less/ }
     end

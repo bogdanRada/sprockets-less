@@ -200,11 +200,11 @@ module Sprockets
 
         def build_cache_store(context)
           return nil if context.environment.cache.nil?
-          @cache_store ||= custom_cache_store(context.environment)
+          custom_cache_store(context.environment)
         end
 
         def custom_cache_store(*args)
-          @custom_cache_store ||= Sprockets::Less::V2::CacheStore.new(*args)
+          Sprockets::Less::V2::CacheStore.new(*args)
         end
 
         # Allow the use of custom Less importers, making sure the
