@@ -110,7 +110,7 @@ module Sprockets
 
 
         def less_engine(data, less_options, css_options)
-          css = Sprockets::Less::Utils.module_include(::Less::Tree, @functions) do
+          #css = Sprockets::Less::Utils.module_include(::Less::Tree, @functions) do
             if ::Less.const_defined? :Engine
               engine = ::Less::Engine.new(data)
             else
@@ -118,7 +118,7 @@ module Sprockets
               engine = parser.parse(data)
             end
             engine.to_css(css_options)
-          end
+        #  end
         end
 
         def run
@@ -126,6 +126,7 @@ module Sprockets
           if css.nil?
             data = Sprockets::Less::Utils.read_file_binary(filename, options)
             new_data, dependencies = process_dependencies(data)
+
             css  = less_engine(new_data, less_options, css_options)
             store_into_cache_store(css)
 

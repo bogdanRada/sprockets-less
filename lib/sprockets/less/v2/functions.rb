@@ -10,50 +10,71 @@ module Sprockets
 
         def asset_path(path, options = {})
           if options.is_a?(Hash) && options.keys.size > 0
-            sprockets_context.asset_path(path, map_options(options))
+            valeu = quote(sprockets_context.asset_path(path, map_options(options)))
           else
-            fetch_css_url(public_path(path))
+            valeu= quote(public_path(path))
           end
+          puts valeu
+          valeu
         end
+
+        def font_path(source, options = {})
+          quote(sprockets_context.font_path(source, map_options(options)))
+        end
+
+        # Using Sprockets::Helpers#font_path, return the url CSS
+        # for the given +source+ as a Sass String. This supports keyword
+        # arguments that mirror the +options+.
+        #
+        # === Examples
+        #
+        #   src: font-url("font.ttf");                  // src: url("/assets/font.ttf");
+        #   src: font-url("image.jpg", $digest: true);  // src: url("/assets/font-27a8f1f96afd8d4c67a59eb9447f45bd.ttf");
+        #
+        def font_url(source, options = {})
+          # Work with the Compass #font_url API
+          "url(#{font_path(source, options)})"
+        end
+
 
         def asset_url(path, options = {})
-          asset_path(path, options)
+          "url(#{asset_path(path, options)})"
         end
 
-        def image_path(img)
-          quote(sprockets_context.image_path(img).to_s)
+        def image_path(img, options = {})
+          fetch_css_url(sprockets_context.image_path(img, map_options(options)))
         end
 
         def asset_data_uri(source)
-          "url(#{sprockets_context.asset_data_uri(source.value)})"
+          fetch_css_url(sprockets_context.asset_data_uri(source), :unquote => true)
         end
 
-        def image_url(img)
-          "url(#{sprockets_context.image_path(img)})"
+        def image_url(img, options = {})
+          image_path(img, options)
         end
 
         def video_path(video)
-          sprockets_context.video_path(video).inspect
+          fetch_css_url(sprockets_context.video_path(video))
         end
 
         def video_url(video)
-          "url(#{sprockets_context.video_path(video)})"
+          fetch_css_url(sprockets_context.video_path(video))
         end
 
         def audio_path(audio)
-          sprockets_context.audio_path(audio).inspect
+          fetch_css_url(sprockets_context.audio_path(audio))
         end
 
         def audio_url(audio)
-          "url(#{context.audio_path(audio)})"
+          fetch_css_url(sprockets_context.audio_path(audio))
         end
 
         def javascript_path(javascript)
-          context.javascript_path(javascript).inspect
+          fetch_css_url(context.javascript_path(javascript))
         end
 
         def javascript_url(javascript)
-          "url(#{context.javascript_path(javascript)})"
+          fetch_css_url(context.javascript_path(javascript))
         end
 
         def stylesheet_path(stylesheet)
@@ -61,14 +82,14 @@ module Sprockets
         end
 
         def stylesheet_url(stylesheet)
-          "url(#{sprockets_context.stylesheet_path(stylesheet)})"
+          fetch_css_url(sprockets_context.stylesheet_path(stylesheet))
         end
 
         protected
 
         def public_path(asset)
-          if defined?(Rails) && sprockets_context.respond_to?(:asset_paths)
-            sprockets_context.asset_paths.compute_public_path asset, ::Rails.application.config.assets.prefix
+          if sprockets_context.respond_to?(:asset_paths)
+            sprockets_context.asset_paths.compute_public_path asset, defined?(Rails) ? ::Rails.application.config.assets.prefix : '/assets'
           else
             sprockets_context.path_to_asset(asset)
           end
@@ -79,11 +100,12 @@ module Sprockets
           Rack::Mime::MIME_TYPES[".#{extension}"]
         end
 
-        def fetch_css_url(value)
-          "url(#{quote(value)})"
+        def fetch_css_url(value ,options = {})
+          "url(#{quote(value, options)})"
         end
 
         def quote(contents, opts = {})
+          return contents if opts[:unquote]
           contents = contents.gsub(/\n\s*/, ' ')
           quote = opts[:quote]
 

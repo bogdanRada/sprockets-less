@@ -107,56 +107,56 @@ describe Sprockets::Less do
     @assets.file 'package-dep/src/stylesheets/_variables.css.less', %(@import "./colors";\n@background-color: red;)
     @assets.file 'package-dep/src/stylesheets/_colors.css.less', '@color: blue;'
     asset = @env['package-prime/stylesheets/main.css.less']
-    expect(asset.to_s).to eql("body {\n  background-color: red;\n  color: blue; }\n")
-  end
-
-  it 'imports relative files without preceding ./' do
-    @assets.file 'folder/main.css.less', %(@import "dep-1";\n@import "subfolder/dep-2";\nbody { background-color: @background-color; color: @color; })
-    @assets.file 'folder/dep-1.css.less', '@background-color: red;'
-    @assets.file 'folder/subfolder/dep-2.css.less', '@color: blue;'
-    asset = @env['folder/main.css']
     expect(asset.to_s).to eql("body {\n  background-color: #ff0000;\n  color: #0000ff;\n}\n")
   end
 
-  it 'imports relative partials without preceding ./' do
-    @assets.file 'folder/main.css.less', %(@import "dep-1";\n@import "subfolder/dep-2";\nbody { background-color: @background-color; color: @color; })
-    @assets.file 'folder/_dep-1.css.less', '@background-color: red;'
-    @assets.file 'folder/subfolder/_dep-2.css.less', '@color: blue;'
-    asset = @env['folder/main.css']
-    expect(asset.to_s).to eql("body {\n  background-color: #ff0000;\n  color: #0000ff;\n}\n")
-  end
+    it 'imports relative files without preceding ./' do
+      @assets.file 'folder/main.css.less', %(@import "dep-1";\n@import "subfolder/dep-2";\nbody { background-color: @background-color; color: @color; })
+      @assets.file 'folder/dep-1.css.less', '@background-color: red;'
+      @assets.file 'folder/subfolder/dep-2.css.less', '@color: blue;'
+      asset = @env['folder/main.css']
+      expect(asset.to_s).to eql("body {\n  background-color: #ff0000;\n  color: #0000ff;\n}\n")
+    end
 
-  it 'imports files relative to root' do
-    @assets.file 'folder/main.css.less', %(@import "dep";\nbody { color: @color; })
-    @assets.file 'dep.css.less', '@color: blue;'
-    asset = @env['folder/main.css']
-    expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
-  end
+    it 'imports relative partials without preceding ./' do
+      @assets.file 'folder/main.css.less', %(@import "dep-1";\n@import "subfolder/dep-2";\nbody { background-color: @background-color; color: @color; })
+      @assets.file 'folder/_dep-1.css.less', '@background-color: red;'
+      @assets.file 'folder/subfolder/_dep-2.css.less', '@color: blue;'
+      asset = @env['folder/main.css']
+      expect(asset.to_s).to eql("body {\n  background-color: #ff0000;\n  color: #0000ff;\n}\n")
+    end
 
-  it 'imports partials relative to root' do
-    @assets.file 'folder/main.css.less', %(@import "dep";\nbody { color: @color; })
-    @assets.file '_dep.css.less', '@color: blue;'
-    asset = @env['folder/main.css']
-    expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
-  end
+    it 'imports files relative to root' do
+      @assets.file 'folder/main.css.less', %(@import "dep";\nbody { color: @color; })
+      @assets.file 'dep.css.less', '@color: blue;'
+      asset = @env['folder/main.css']
+      expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
+    end
+
+    it 'imports partials relative to root' do
+      @assets.file 'folder/main.css.less', %(@import "dep";\nbody { color: @color; })
+      @assets.file '_dep.css.less', '@color: blue;'
+      asset = @env['folder/main.css']
+      expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
+    end
 
   it 'shares Sass environment with other imports' do
     @assets.file 'main.css.less', %(@import "dep-1";\n@import "dep-2";)
     @assets.file '_dep-1.css.less', '@color: blue;'
     @assets.file '_dep-2.css.less', 'body { color: @color; }'
     asset = @env['main.css']
-    expect(asset.to_s).to eql("body {\n  color: blue; }\n")
-  end
-
-  it 'imports files from the assets load path' do
-    vendor = @root.directory 'vendor'
-    @env.append_path vendor.to_s
-
-    @assets.file 'main.css.less', %(@import "dep";\nbody { color: @color; })
-    vendor.file 'dep.css.less', '@color: blue;'
-    asset = @env['main.css']
     expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
   end
+
+    it 'imports files from the assets load path' do
+      vendor = @root.directory 'vendor'
+      @env.append_path vendor.to_s
+
+      @assets.file 'main.css.less', %(@import "dep";\nbody { color: @color; })
+      vendor.file 'dep.css.less', '@color: blue;'
+      asset = @env['main.css']
+      expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
+    end
 
   it 'imports nested partials with relative path from the assets load path' do
     vendor = @root.directory 'vendor'
@@ -167,59 +167,59 @@ describe Sprockets::Less do
     vendor.file 'folder1/_dep1.css.less', '@import "folder2/dep2";'
     vendor.file 'folder1/folder2/_dep2.css.less', '@color: blue;'
     asset = @env['folder/main.css']
-    expect(asset.to_s).to eql("body {\n  color: blue; }\n")
-  end
-
-  it 'imports nested partials with relative path and glob from the assets load path' do
-    vendor = @root.directory 'vendor'
-    @env.append_path vendor.to_s
-
-    @assets.file 'folder/main.css.less', %(@import "dep";\nbody { color: @color; })
-    vendor.file 'dep.css.less', '@import "folder1/dep1";'
-    vendor.file 'folder1/_dep1.css.less', '@import "folder2/*";'
-    vendor.file 'folder1/folder2/_dep2.css.less', '@color: blue;'
-    asset = @env['folder/main.css']
-    expect(asset.to_s).to eql("body {\n  color: blue; }\n")
-  end
-
-  it 'allows global Sass configuration' do
-    @assets.file 'main.css.less', "body {\n  color: blue;\n}"
-
-    asset = @env['main.css']
-    expect(asset.to_s).to eql("body {\n  color: blue;\n}\n")
-  end
-
-  it 'imports files from the Sass load path' do
-    vendor = @root.directory 'vendor'
-    @env.append_path vendor.to_s
-
-    @assets.file 'main.css.less', %(@import "dep";\nbody { color: @color; })
-    vendor.file 'dep.less', '@color: blue;'
-    asset = @env['main.css']
     expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
   end
 
-  it 'imports globbed files' do
-    @assets.file 'main.css.less', %(@import "folder/*";\nbody { color: @color; background: @bg-color; })
-    @assets.file 'folder/dep-1.css.less', '@color: blue;'
-    @assets.file 'folder/dep-2.css.less', '@bg-color: red;'
-    asset = @env['main.css']
-    expect(asset.to_s).to eql("body {\n  color: #0000ff;\n  background: #ff0000;\n}\n")
-  end
+    it 'imports nested partials with relative path and glob from the assets load path' do
+      vendor = @root.directory 'vendor'
+      @env.append_path vendor.to_s
 
-  it 'adds dependencies when imported' do
-    @assets.file 'main.css.less', %(@import "dep";\nbody { color: @color; })
-    dep = @assets.file 'dep.css.less', '@color: blue;'
+      @assets.file 'folder/main.css.less', %(@import "dep";\nbody { color: @color; })
+      vendor.file 'dep.css.less', '@import "folder1/dep1";'
+      vendor.file 'folder1/_dep1.css.less', '@import "folder2/*";'
+      vendor.file 'folder1/folder2/_dep2.css.less', '@color: blue;'
+      asset = @env['folder/main.css']
+      expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
+    end
 
-    asset = @env['main.css']
-    old_asset = asset.dup
-    expect(asset).to be_fresh(@env, old_asset)
+    it 'allows global Sass configuration' do
+      @assets.file 'main.css.less', "body {\n  color: blue;\n}"
 
-    write_asset(dep, '@color: red;')
+      asset = @env['main.css']
+      expect(asset.to_s).to eql("body {\n  color: blue;\n}\n")
+    end
 
-    asset = Sprockets::Less::Utils.version_of_sprockets >= 3 ? @env['main.css'] : asset
-    expect(asset).to_not be_fresh(@env, old_asset)
-  end
+    it 'imports files from the Sass load path' do
+      vendor = @root.directory 'vendor'
+      @env.append_path vendor.to_s
+
+      @assets.file 'main.css.less', %(@import "dep";\nbody { color: @color; })
+      vendor.file 'dep.less', '@color: blue;'
+      asset = @env['main.css']
+      expect(asset.to_s).to eql("body {\n  color: #0000ff;\n}\n")
+    end
+
+    it 'imports globbed files' do
+      @assets.file 'main.css.less', %(@import "folder/*";\nbody { color: @color; background: @bg-color; })
+      @assets.file 'folder/dep-1.css.less', '@color: blue;'
+      @assets.file 'folder/dep-2.css.less', '@bg-color: red;'
+      asset = @env['main.css']
+      expect(asset.to_s).to eql("body {\n  color: #0000ff;\n  background: #ff0000;\n}\n")
+    end
+
+    it 'adds dependencies when imported' do
+      @assets.file 'main.css.less', %(@import "dep";\nbody { color: @color; })
+      dep = @assets.file 'dep.css.less', '@color: blue;'
+
+      asset = @env['main.css']
+      old_asset = asset.dup
+      expect(asset).to be_fresh(@env, old_asset)
+
+      write_asset(dep, '@color: red;')
+
+      asset = Sprockets::Less::Utils.version_of_sprockets >= 3 ? @env['main.css'] : asset
+      expect(asset).to_not be_fresh(@env, old_asset)
+    end
 
   it 'adds dependencies from assets when imported' do
     @assets.file 'main.css.less', %(@import "dep-1.css.less";\nbody { color: @color; })
@@ -236,21 +236,21 @@ describe Sprockets::Less do
     expect(asset).to_not be_fresh(@env, old_asset)
   end
 
-  it 'adds dependencies when imported from a glob' do
-    @assets.file 'main.css.less', %(@import "folder/*";\nbody { color: @color; background: @bg-color; })
-    @assets.file 'folder/_dep-1.css.less', '@color: blue;'
-    dep = @assets.file 'folder/_dep-2.css.less', '@bg-color: red;'
+    it 'adds dependencies when imported from a glob' do
+      @assets.file 'main.css.less', %(@import "folder/*";\nbody { color: @color; background: @bg-color; })
+      @assets.file 'folder/_dep-1.css.less', '@color: blue;'
+      dep = @assets.file 'folder/_dep-2.css.less', '@bg-color: red;'
 
-    asset = @env['main.css']
-    old_asset = asset.dup
-    expect(asset).to be_fresh(@env, old_asset)
+      asset = @env['main.css']
+      old_asset = asset.dup
+      expect(asset).to be_fresh(@env, old_asset)
 
-    write_asset(dep, "@bg-color: white;" )
+      write_asset(dep, "@bg-color: white;" )
 
-    asset = Sprockets::Less::Utils.version_of_sprockets >= 3 ? @env['main.css'] : asset
+      asset = Sprockets::Less::Utils.version_of_sprockets >= 3 ? @env['main.css'] : asset
 
-    expect(asset).to_not be_fresh(@env, old_asset)
-  end
+      expect(asset).to_not be_fresh(@env, old_asset)
+    end
 
   it "uses the environment's cache" do
     cache = {}
@@ -270,55 +270,55 @@ describe Sprockets::Less do
     end
     expect(sass_cache).to_not be_nil
   end
-  #
+
 
   it 'adds the #asset_path helper' do
-    @assets.file 'asset_path.css.less',  %(body { background: asset-path('image.jpg'); })
+    @assets.file 'asset_path.css.less',  %(body { background: url(~"asset-path('image.jpg')"); })
     @assets.file 'asset_url.css.less', %(body { background: asset-url("image.jpg"); })
-    @assets.file 'asset_path_options.css.less', %(body { background: asset-path("image.jpg", @digest: true, @prefix: "/themes"); })
+    @assets.file 'asset_path_options.css.less', %(body { background: asset-path("image.jpg", @{prefix} "/themes"); })
     @assets.file 'asset_url_options.css.less', %(body { background: asset-url("image.jpg", @digest: true, @prefix: "/themes"); })
     @assets.file 'image.jpg'
 
     expect(@env['asset_path.css'].to_s).to eql(%(body {\n  background: url("/assets/image.jpg");\n}\n))
-     expect(@env['asset_url.css'].to_s).to eql(%(body {\n  background: url("/assets/image.jpg");\n}\n))
-     expect(@env['asset_path_options.css'].to_s).to match(%r(body \{\n  background: url\("/themes/image-[0-9a-f]+.jpg"\); \}\n))
-     expect(@env['asset_url_options.css'].to_s).to match(%r(body \{\n  background: url\("/themes/image-[0-9a-f]+.jpg"\); \}\n))
+    expect(@env['asset_url.css'].to_s).to eql(%(body {\n  background: url("/assets/image.jpg");\n}\n))
+    expect(@env['asset_path_options.css'].to_s).to match(%r(body \{\n  background: url\("/themes/image-[0-9a-f]+.jpg"\); \}\n))
+    expect(@env['asset_url_options.css'].to_s).to match(%r(body \{\n  background: url\("/themes/image-[0-9a-f]+.jpg"\); \}\n))
   end
-
-  xit 'adds the #image_path helper' do
-    @assets.file 'image_path.css.less', %(body { background: url(image-path("image.jpg")); })
+  #
+  it 'adds the #image_path helper' do
+    @assets.file 'image_path.css.less', %(body { background: image-path("image.jpg"); })
     @assets.file 'image_url.css.less', %(body { background: image-url("image.jpg"); })
-    @assets.file 'image_path_options.css.less', %(body { background: url(image-path("image.jpg", @digest: true, @prefix: "/themes")); })
-    @assets.file 'image_url_options.css.less', %(body { background: image-url("image.jpg", @digest: true, @prefix: "/themes"); })
+    #  @assets.file 'image_path_options.css.less', %(body { background: url(image-path("image.jpg", @digest: true, @prefix: "/themes")); })
+    #  @assets.file 'image_url_options.css.less', %(body { background: image-url("image.jpg", @digest: true, @prefix: "/themes"); })
     @assets.file 'image.jpg'
 
-    expect(@env['image_path.css'].to_s).to eql(%(body {\n  background: url("/assets/image.jpg"); }\n))
-    expect(@env['image_url.css'].to_s).to eql(%(body {\n  background: url("/assets/image.jpg"); }\n))
-    expect(@env['image_path_options.css'].to_s).to match(%r(body \{\n  background: url\("/themes/image-[0-9a-f]+.jpg"\); \}\n))
-    expect(@env['image_url_options.css'].to_s).to match(%r(body \{\n  background: url\("/themes/image-[0-9a-f]+.jpg"\); \}\n))
+    expect(@env['image_path.css'].to_s).to eql(%(body {\n  background: url("/assets/image.jpg");\n}\n))
+    expect(@env['image_url.css'].to_s).to eql(%(body {\n  background: url("/assets/image.jpg");\n}\n))
+    #  expect(@env['image_path_options.css'].to_s).to match(%r(body \{\n  background: url\("/themes/image-[0-9a-f]+.jpg"\); \}\n))
+    #  expect(@env['image_url_options.css'].to_s).to match(%r(body \{\n  background: url\("/themes/image-[0-9a-f]+.jpg"\); \}\n))
   end
 
-  xit 'adds the #font_path helper' do
+  it 'adds the #font_path helper' do
     @assets.file 'font_path.css.less', %(@font-face { src: url(font-path("font.ttf")); })
     @assets.file 'font_url.css.less', %(@font-face { src: font-url("font.ttf"); })
-    @assets.file 'font_path_options.css.less', %(@font-face { src: url(font-path("font.ttf", @digest: true, @prefix: "/themes")); })
-    @assets.file 'font_url_options.css.less', %(@font-face { src: font-url("font.ttf", @digest: true, @prefix: "/themes"); })
+    #  @assets.file 'font_path_options.css.less', %(@font-face { src: url(font-path("font.ttf", @digest: true, @prefix: "/themes")); })
+    #  @assets.file 'font_url_options.css.less', %(@font-face { src: font-url("font.ttf", @digest: true, @prefix: "/themes"); })
     @assets.file 'font.ttf'
 
     expect(@env['font_path.css'].to_s).to eql(%(@font-face {\n  src: url("/assets/font.ttf"); }\n))
     expect(@env['font_url.css'].to_s).to eql(%(@font-face {\n  src: url("/assets/font.ttf"); }\n))
-    expect(@env['font_path_options.css'].to_s).to match(%r(@font-face \{\n  src: url\("/themes/font-[0-9a-f]+.ttf"\); \}\n))
-    expect(@env['font_url_options.css'].to_s).to match(%r(@font-face \{\n  src: url\("/themes/font-[0-9a-f]+.ttf"\); \}\n))
+    #  expect(@env['font_path_options.css'].to_s).to match(%r(@font-face \{\n  src: url\("/themes/font-[0-9a-f]+.ttf"\); \}\n))
+    #  expect(@env['font_url_options.css'].to_s).to match(%r(@font-face \{\n  src: url\("/themes/font-[0-9a-f]+.ttf"\); \}\n))
   end
 
-  xit 'adds the #asset_data_uri helper' do
+  it 'adds the #asset_data_uri helper' do
     @assets.file 'asset_data_uri.css.less', %(body { background: asset-data-uri("image.jpg"); })
     @assets.file 'image.jpg', File.read('spec/fixtures/image.jpg')
 
     expect(@env['asset_data_uri.css'].to_s).to include("body {\n  background: url(data:image/jpeg;base64,")
   end
 
-  xit "mirrors Compass's #image_url helper" do
+  it "mirrors Compass's #image_url helper" do
     @assets.file 'image_path.css.less', %(body { background: url(image-url("image.jpg", true)); })
     @assets.file 'image_url.css.less', %(body { background: image-url("image.jpg", false); })
     @assets.file 'cache_buster.css.less', %(body { background: image-url("image.jpg", false, true); })
@@ -329,7 +329,7 @@ describe Sprockets::Less do
     expect(@env['cache_buster.css'].to_s).to eql(%(body {\n  background: url("/assets/image.jpg"); }\n))
   end
 
-  xit "mirrors Compass's #font_url helper" do
+  it "mirrors Compass's #font_url helper" do
     @assets.file 'font_path.css.less', %(@font-face { src: url(font-url("font.ttf", true)); })
     @assets.file 'font_url.css.less', %(@font-face { src: font-url("font.ttf", false); })
     @assets.file 'font.ttf'
@@ -338,7 +338,7 @@ describe Sprockets::Less do
     expect(@env['font_url.css'].to_s).to eql(%(@font-face {\n  src: url("/assets/font.ttf"); }\n))
   end
 
-  xit "mirrors Sass::Rails's #asset_path helpers" do
+  it "mirrors Sass::Rails's #asset_path helpers" do
     @assets.file 'asset_path.css.less', %(body { background: url(asset-path("image.jpg", image)); })
     @assets.file 'asset_url.css.less', %(body { background: asset-url("icon.jpg", image); })
     @assets.file 'image.jpg'

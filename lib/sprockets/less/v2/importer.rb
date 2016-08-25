@@ -98,7 +98,7 @@ module Sprockets
             context.depend_on path
             dependencies << path
             relative_path = path.relative_path_from Pathname.new(base_path).dirname
-            imports << %(@import "#{relative_path}";\n)
+            imports << find_relative(relative_path, base_path, less_options, css_options)
           end
           return nil if engine_imports.empty?
           css = less_engine(engine_imports, base_path, context, less_options, css_options)
