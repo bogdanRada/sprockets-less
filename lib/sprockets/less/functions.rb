@@ -9,10 +9,16 @@ module Less
 
     def initialize(options)
       @tree = Less.instance_eval { @loader.require('less/tree') }
-      @importer = options[:importer]
-      @sprockets_context = @importer.context
-      extend_js Sprockets::Helpers if defined?(Sprockets::Helpers)
-      extend_js Sprockets::Less::Utils.get_class_by_version("Functions")
+    end
+
+    # Adds all of a module's public instance methods as Less functions
+    def extend_js(mod)
+      extend mod
+      mod.public_instance_methods.each do |method_name|
+        add_function(sym_to_css(method_name)) { |tree, cxt|
+          send method_name.to_sym, unquote(cxt.toCSS())
+        }
+      end
     end
 
     private
@@ -38,7 +44,8 @@ module Less
       lambda do |*args|
         # args: (this, node) v8 >= 0.10, otherwise (node)
         raise ArgumentError, "missing node" if args.empty?
-        @tree[:Anonymous].new block.call(@tree, args.last)
+        options = args.last.is_a?(::Hash) ? args.pop : {}
+        @tree[:Anonymous].new block.call(@tree, args.last, options)
       end
     end
 
@@ -52,28 +59,17 @@ module Less
       functions[name] = anonymous_function(block)
     end
 
-    # Adds all of a module's public instance methods as Less functions
-    def extend_js(mod)
-      extend mod
-      mod.public_instance_methods.each do |method_name|
-        add_function(sym_to_css(method_name)) { |tree, cxt|
-          send method_name.to_sym, unquote(cxt.toCSS())
-        }
-      end
-    end
-
   end
+end
 
-  class Parser
+::Less::Parser.class_eval do
+  attr_reader :tree
 
-    attr_reader :tree
-
-    # Override the parser's initialization to improve Less `tree`
-    # with sprockets awareness
-    alias_method :initialize_without_tree, :initialize
-    def initialize(options={})
-      initialize_without_tree(options)
-      @tree = Less::Tree.new(options)
-    end
+  # Override the parser's initialization to improve Less `tree`
+  # with sprockets awareness
+  alias_method :initialize_without_tree, :initialize
+  def initialize(options={})
+    initialize_without_tree(options)
+    @tree = Less::Tree.new(options)
   end
 end

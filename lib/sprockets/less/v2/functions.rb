@@ -10,16 +10,14 @@ module Sprockets
 
         def asset_path(path, options = {})
           if options.is_a?(Hash) && options.keys.size > 0
-            valeu = quote(sprockets_context.asset_path(path, map_options(options)))
+           fetch_css_url(sprockets_context.asset_path(path, map_options(options)))
           else
-            valeu= quote(public_path(path))
+            fetch_css_url(public_path(path))
           end
-          puts valeu
-          valeu
         end
 
         def font_path(source, options = {})
-          quote(sprockets_context.font_path(source, map_options(options)))
+          fetch_css_url(sprockets_context.font_path(source, map_options(options)))
         end
 
         # Using Sprockets::Helpers#font_path, return the url CSS
@@ -33,12 +31,12 @@ module Sprockets
         #
         def font_url(source, options = {})
           # Work with the Compass #font_url API
-          "url(#{font_path(source, options)})"
+          font_path(source, options)
         end
 
 
         def asset_url(path, options = {})
-          "url(#{asset_path(path, options)})"
+          asset_path(path, options)
         end
 
         def image_path(img, options = {})
@@ -95,9 +93,9 @@ module Sprockets
           end
         end
 
-        def fetch_content_type(extension = nil)
-          return nil if extension.nil?
-          Rack::Mime::MIME_TYPES[".#{extension}"]
+
+        def sprockets_context
+          ::Less.Parser['sprockets_context']
         end
 
         def fetch_css_url(value ,options = {})
@@ -105,42 +103,7 @@ module Sprockets
         end
 
         def quote(contents, opts = {})
-          return contents if opts[:unquote]
-          contents = contents.gsub(/\n\s*/, ' ')
-          quote = opts[:quote]
-
-          # Short-circuit if there are no characters that need quoting.
-          unless contents =~ /[\n\\"']|\#\{/
-            quote ||= '"'
-            return "#{quote}#{contents}#{quote}"
-          end
-
-          if quote.nil?
-            if contents.include?('"')
-              if contents.include?("'")
-                quote = '"'
-              else
-                quote = "'"
-              end
-            else
-              quote = '"'
-            end
-          end
-
-          # Replace single backslashes with multiples.
-          contents = contents.gsub("\\", "\\\\\\\\")
-
-          # Escape interpolation.
-          contents = contents.gsub('#{', "\\\#{") if opts[:sass]
-
-          if quote == '"'
-            contents = contents.gsub('"', "\\\"")
-          else
-            contents = contents.gsub("'", "\\'")
-          end
-
-          contents = contents.gsub(/\n(?![a-fA-F0-9\s])/, "\\a").gsub("\n", "\\a ")
-          "#{quote}#{contents}#{quote}"
+          Sprockets::Less::Utils.quote(contents, opts)
         end
 
         # Returns an options hash where the keys are symbolized

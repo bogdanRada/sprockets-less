@@ -110,15 +110,11 @@ module Sprockets
 
 
         def less_engine(data, less_options, css_options)
-          #css = Sprockets::Less::Utils.module_include(::Less::Tree, @functions) do
-            if ::Less.const_defined? :Engine
-              engine = ::Less::Engine.new(data)
-            else
-              parser  = ::Less::Parser.new(less_options)
-              engine = parser.parse(data)
-            end
-            engine.to_css(css_options)
-        #  end
+          ::Less.Parser['sprockets_context'] = context
+          parser = ::Less::Parser.new(less_options)
+          parser.tree.extend_js @functions
+          engine = parser.parse(data)
+          engine.to_css(css_options)
         end
 
         def run

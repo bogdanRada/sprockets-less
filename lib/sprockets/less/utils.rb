@@ -92,27 +92,45 @@ module Sprockets
           end
         end
 
-        def module_include(base, mod)
-          old_methods = {}
+        def quote(contents, opts = {})
+          return contents if opts[:unquote]
+          contents = contents.gsub(/\n\s*/, ' ')
+          quote = opts[:quote]
 
-          mod.instance_methods.each do |sym|
-            old_methods[sym] = base.instance_method(sym) if base.method_defined?(sym)
+          # Short-circuit if there are no characters that need quoting.
+          unless contents =~ /[\n\\"']|\#\{/
+            quote ||= '"'
+            return "#{quote}#{contents}#{quote}"
           end
 
-          mod.instance_methods.each do |sym|
-            method = mod.instance_method(sym)
-            base.send(:define_method, sym, method)
+          if quote.nil?
+            if contents.include?('"')
+              if contents.include?("'")
+                quote = '"'
+              else
+                quote = "'"
+              end
+            else
+              quote = '"'
+            end
           end
 
-          yield
-        ensure
-          mod.instance_methods.each do |sym|
-            base.send(:undef_method, sym) if base.method_defined?(sym)
+          # Replace single backslashes with multiples.
+          contents = contents.gsub("\\", "\\\\\\\\")
+
+          # Escape interpolation.
+          contents = contents.gsub('#{', "\\\#{") if opts[:sass]
+
+          if quote == '"'
+            contents = contents.gsub('"', "\\\"")
+          else
+            contents = contents.gsub("'", "\\'")
           end
-          old_methods.each do |sym, method|
-            base.send(:define_method, sym, method)
-          end
+
+          contents = contents.gsub(/\n(?![a-fA-F0-9\s])/, "\\a").gsub("\n", "\\a ")
+          "#{quote}#{contents}#{quote}"
         end
+
       end
     end
   end
