@@ -12,11 +12,11 @@ module Sprockets
 
 
         def _store(key, version, sha, contents)
-          environment.send :cache_set, "sass/#{key}", version: version, sha: sha, contents: contents
+          environment.send :cache_set, "less/#{key}", version: version, sha: sha, contents: contents
         end
 
         def _retrieve(key, version, sha)
-          obj = environment.send(:cache_get, "sass/#{key}")
+          obj = environment.send(:cache_get, "less/#{key}")
           return unless obj.is_a?(Hash)
           return if obj[:version] != version || obj[:sha] != sha
           obj[:obj]
