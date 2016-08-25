@@ -9,7 +9,7 @@ module Sprockets
         end
 
         def minor_version_of_sprockets
-          full_version_of_sprockets.split('.')[1].to_i
+          full_version_of_sprockets.split('.')[2].to_i
         end
 
         def version_of_sprockets

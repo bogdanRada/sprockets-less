@@ -109,7 +109,7 @@ module Sprockets
         end
 
 
-          def less_engine(data, less_options, css_options)
+        def less_engine(data, less_options, css_options)
           css = Sprockets::Less::Utils.module_include(::Less::Tree, @functions) do
             if ::Less.const_defined? :Engine
               engine = ::Less::Engine.new(data)
@@ -122,20 +122,25 @@ module Sprockets
         end
 
         def run
-          data = Sprockets::Less::Utils.read_file_binary(filename, options)
-          new_data, dependencies = process_dependencies(data)
-          css  = less_engine(new_data, less_options, css_options)
+          css = retrieve_from_cache_store
+          if css.nil?
+            data = Sprockets::Less::Utils.read_file_binary(filename, options)
+            new_data, dependencies = process_dependencies(data)
+            css  = less_engine(new_data, less_options, css_options)
+            store_into_cache_store(css)
 
-          less_dependencies = Set.new([filename])
-          if context.respond_to?(:metadata)
-            dependencies.map do |dependency|
-              less_dependencies << dependency
-              context.metadata[:dependencies] << Sprockets::URIUtils.build_file_digest_uri(dependency)
+            less_dependencies = Set.new([filename])
+            if context.respond_to?(:metadata)
+              dependencies.map do |dependency|
+                less_dependencies << dependency
+                context.metadata[:dependencies] << Sprockets::URIUtils.build_file_digest_uri(dependency)
+              end
+              context.metadata.merge(data: css, less_dependencies: less_dependencies)
+            else
+              css
             end
-            context.metadata.merge(data: css, less_dependencies: less_dependencies)
-          else
-            css
           end
+
 
         rescue => e
           # Annotates exception message with parse line number
@@ -178,13 +183,27 @@ module Sprockets
           less
         end
 
+        def cache_sha_filename
+          Sprockets::Less::Utils.digest(Sprockets::Less::Utils.read_file_binary(filename, options))
+        end
+
+        def retrieve_from_cache_store
+          return if less_options[:cache] == false || less_options[:cache_store].nil?
+          less_options[:cache_store]._retrieve(@cache_key, @cache_version,  cache_sha_filename)
+        end
+
+        def store_into_cache_store(data)
+          return if less_options[:cache] == false || less_options[:cache_store].nil?
+          less_options[:cache_store]._store(@cache_key, @cache_version,  cache_sha_filename, data)
+        end
+
         def build_cache_store(context)
           return nil if context.environment.cache.nil?
-          custom_cache_store(context.environment)
+          @cache_store ||= custom_cache_store(context.environment)
         end
 
         def custom_cache_store(*args)
-          Sprockets::Less::V2::CacheStore.new(*args)
+          @custom_cache_store ||= Sprockets::Less::V2::CacheStore.new(*args)
         end
 
         # Allow the use of custom Less importers, making sure the
