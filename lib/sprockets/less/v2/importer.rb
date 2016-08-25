@@ -55,7 +55,7 @@ module Sprockets
         # Create a Sass::Engine from the given path.
         def engine_from_path(path, base_path, less_options, css_options)
           context = less_options[:custom][:sprockets_context]
-          (pathname = resolve(context, path, base_path, less_options))  || (return nil)
+          (pathname = resolve(context, path, base_path))  || (return nil)
           context.depend_on pathname
           dependencies << pathname
           data_to_parse = evaluate(context, pathname)
@@ -108,7 +108,7 @@ module Sprockets
         # Finds an asset from the given path. This is where
         # we make Sprockets behave like Sass, and import partial
         # style paths.
-        def resolve(context, path, base_path, less_options)
+        def resolve(context, path, base_path)
           paths, _root_path = possible_files(context, path, base_path)
           paths.each do |file|
             context.resolve(file.to_s) do |found|

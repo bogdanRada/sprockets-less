@@ -30,7 +30,7 @@ module Sprockets
         end
 
         def available_content_types(path)
-          ['text/css', syntax_mime_type(path), "text/#{syntax}+ruby"].compact.uniq
+          ['text/css', syntax_mime_type, "text/#{syntax}+ruby"].compact.uniq
         end
 
         def check_context_content_types(context, path)
@@ -168,7 +168,7 @@ module Sprockets
 
         def get_context_transformers(context, content_type, path)
           available_transformers =  context.environment.transformers[content_type]
-          additional_transformers = available_transformers.key?(syntax_mime_type ? available_transformers[syntax_mime_type] : []
+          additional_transformers = available_transformers.key?(syntax_mime_type) ? available_transformers[syntax_mime_type] : []
           additional_transformers.is_a?(Array) ? additional_transformers : [additional_transformers]
         end
 

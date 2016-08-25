@@ -133,8 +133,8 @@ module Sprockets
             less_dependencies = Set.new([filename])
             if context.respond_to?(:metadata)
               dependencies.map do |dependency|
-                less_dependencies << dependency
-                context.metadata[:dependencies] << Sprockets::URIUtils.build_file_digest_uri(dependency)
+                less_dependencies << dependency.to_s
+                context.metadata[:dependencies] << Sprockets::URIUtils.build_file_digest_uri(dependency.to_s)
               end
               context.metadata.merge(data: css, less_dependencies: less_dependencies)
             else
