@@ -21,7 +21,7 @@ module Less
       end
     end
 
-    private
+    #private
 
     # Transforms a css function name string to a (method) symbol
     def css_to_sym(str)
@@ -36,7 +36,8 @@ module Less
     # Removes quotes
     def unquote(str)
       s = str.to_s.strip
-      s =~ /^['"](.*?)['"]$/ ? $1 : s
+      s.gsub!(/["']+/, '')
+      s
     end
 
     # Creates a JavaScript anonymous function from a Ruby block
@@ -65,11 +66,66 @@ end
 ::Less::Parser.class_eval do
   attr_reader :tree
 
+
   # Override the parser's initialization to improve Less `tree`
   # with sprockets awareness
   alias_method :initialize_without_tree, :initialize
+  alias_method :original_parse, :parse
+
   def initialize(options={})
     initialize_without_tree(options)
     @tree = Less::Tree.new(options)
+  end
+
+  def string_to_hash(string, arr_sep=',', key_sep=':')
+    array = string.split(arr_sep)
+    hash = {}
+
+    array.each do |e|
+      key_value = e.split(key_sep)
+      hash[key_value[0].strip.to_sym] = key_value[1].strip
+    end
+
+    return hash
+  end
+
+  def parse_functions(less, options = {})
+    @tree.functions.keys.each do |function_name|
+      next unless @tree.respond_to?(@tree.css_to_sym(function_name))
+      function_regex =  /#{function_name}\(([^\)]*)\)/
+      function_data = function_regex.match(less)
+      if function_data
+        function_data = function_data.captures
+        params = []
+        function_data.each do |a|
+          a.split(',').each do |param|
+            param = param.gsub(/["']+/, '').gsub('@', '')
+            if param.include?(':')
+              options.merge!(string_to_hash(param))
+            else
+              params << param
+            end
+          end
+        end
+        params << options  if options.keys.size > 0
+        css = @tree.send(@tree.css_to_sym(function_name), *params)
+        less.gsub!(function_regex, css)
+      end
+    end
+    less
+  end
+
+  def parse(less)
+    uri_rx = /\s+url\((.*)\)/
+    urls = less.scan(uri_rx).flatten.compact.uniq
+    if urls.size > 0
+      urls.each do |url|
+        original_url = url.dup
+        url = parse_functions(url, from_url: true)
+        less.gsub!(original_url, url)
+      end
+    end
+    parse_functions(less)
+    original_parse(less)
   end
 end

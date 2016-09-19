@@ -9,15 +9,19 @@ module Sprockets
         end
 
         def asset_path(path, options = {})
-          if options.is_a?(Hash) && options.keys.size > 0
-           fetch_css_url(sprockets_context.asset_path(path, map_options(options)))
+          if options[:from_url] || (options.is_a?(Hash) && options.keys.size > 0)
+            quote(sprockets_context.asset_path(path,map_options(options)))
           else
             fetch_css_url(public_path(path))
           end
         end
 
         def font_path(source, options = {})
-          fetch_css_url(sprockets_context.font_path(source, map_options(options)))
+          if options[:from_url] || (options.is_a?(Hash) && options.keys.size > 0)
+           quote(sprockets_context.font_path(source, map_options(options)))
+          else
+            fetch_css_url(public_path(source))
+          end
         end
 
         # Using Sprockets::Helpers#font_path, return the url CSS
@@ -27,20 +31,26 @@ module Sprockets
         # === Examples
         #
         #   src: font-url("font.ttf");                  // src: url("/assets/font.ttf");
-        #   src: font-url("image.jpg", $digest: true);  // src: url("/assets/font-27a8f1f96afd8d4c67a59eb9447f45bd.ttf");
+        #   src: font-url("image.jpg", @digest: true);  // src: url("/assets/font-27a8f1f96afd8d4c67a59eb9447f45bd.ttf");
         #
         def font_url(source, options = {})
           # Work with the Compass #font_url API
-          font_path(source, options)
+          value = font_path(source, options)
+          verify_url_value(value, options)
         end
 
 
         def asset_url(path, options = {})
-          asset_path(path, options)
+          value = asset_path(path, options)
+          verify_url_value(value, options)
         end
 
         def image_path(img, options = {})
-          fetch_css_url(sprockets_context.image_path(img, map_options(options)))
+          if options[:from_url] || (options.is_a?(Hash) && options.keys.size > 0)
+           value = quote(sprockets_context.image_path(img, map_options(options)))
+          else
+            value = fetch_css_url(public_path(img))
+          end
         end
 
         def asset_data_uri(source)
@@ -48,7 +58,8 @@ module Sprockets
         end
 
         def image_url(img, options = {})
-          image_path(img, options)
+          value = image_path(img, options)
+          verify_url_value(value, options)
         end
 
         def video_path(video)
@@ -99,7 +110,12 @@ module Sprockets
         end
 
         def fetch_css_url(value ,options = {})
-          "url(#{quote(value, options)})"
+          new_value = !options[:unquote].nil? ? value : quote(value, options)
+          "url(#{new_value})"
+        end
+
+        def verify_url_value(value ,options = {})
+          options[:from_url] || value.include?("url(") ? value : "url(#{value})"
         end
 
         def quote(contents, opts = {})
@@ -120,7 +136,6 @@ module Sprockets
           rv = hash.class.new
           hash.each do |k, v|
             new_key, new_value = yield(k, v)
-            new_key = hash.denormalize(new_key) if hash.is_a?(NormalizedMap) && new_key == k
             rv[new_key] = new_value
           end
           rv
