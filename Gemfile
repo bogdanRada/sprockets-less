@@ -6,4 +6,5 @@ gem "therubyrhino", "~> 2.0", :require => nil, :platforms => :jruby
 
 if RUBY_VERSION < "2.2.0"
   gem 'rack', '>= 1.0', '< 2.0'
+  gem 'bundler', '>= 1.0.6', '< 1.13'
 end
