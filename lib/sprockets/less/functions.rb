@@ -99,7 +99,15 @@ end
         params = []
         function_data.each do |a|
           a.split(',').each do |param|
-            param = param.gsub(/["']+/, '').gsub('@', '')
+            if param.include?("@{")
+             variables = param.scan(/@\{([a-zA-Z0-9\-\_]+)\}/).compact.flatten.uniq
+             variables.each do |variable|
+              variable_value = less.scan(/@#{variable}\:\s+["']{1}([^"']+)["']{1}/).compact.flatten.uniq.first.to_s
+              puts "Found #{variable_value.inspect} for #{variable.inspect} \n"
+               param = param.gsub(/@\{#{variable}\}/, variable_value)
+              end
+            end
+            param = param.gsub(/["']+/, '').gsub(/@(?=\w+)/, '')
             if param.include?(':')
               options.merge!(string_to_hash(param))
             else
@@ -108,7 +116,11 @@ end
           end
         end
         params << options  if options.keys.size > 0
+        begin
         css = @tree.send(@tree.css_to_sym(function_name), *params)
+        rescue =>  e
+          raise [e, function_name, params, less].inspect
+        end
         less.gsub!(function_regex, css)
       end
     end
