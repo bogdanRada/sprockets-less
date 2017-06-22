@@ -32,6 +32,7 @@ module Sprockets
               raise Encoding::InvalidByteSequenceError, "#{filename} is not valid #{data.encoding}"
             end
           end
+
           data
         end
 

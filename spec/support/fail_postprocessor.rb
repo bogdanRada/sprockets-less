@@ -16,8 +16,8 @@ class FailPostProcessor
     filename = input[:filename]
     source   = input[:data]
     context  = input[:environment].context_class.new(input)
-
     result = run(filename, source, context)
+
     context.metadata.merge(data: result)
   end
 end

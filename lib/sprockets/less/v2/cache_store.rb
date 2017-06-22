@@ -10,7 +10,6 @@ module Sprockets
           @environment = environment
         end
 
-
         def _store(key, version, sha, contents)
           environment.send :cache_set, "less/#{key}", version: version, sha: sha, contents: contents
         end
@@ -19,9 +18,9 @@ module Sprockets
           obj = environment.send(:cache_get, "less/#{key}")
           return unless obj.is_a?(Hash)
           return if obj[:version] != version || obj[:sha] != sha
+
           obj[:obj]
         end
-
       end
     end
   end

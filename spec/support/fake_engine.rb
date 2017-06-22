@@ -26,7 +26,7 @@ module Sprockets
       end
 
       def call(input)
-        @context  = input[:environment].context_class.new(input)
+        @context = input[:environment].context_class.new(input)
         run
       end
 
@@ -38,13 +38,13 @@ module Sprockets
       def run
         @has_been_used = true
         result = ""
+
         if context.respond_to?(:metadata)
           context.metadata.merge(data: result, less_dependencies:  Set.new([]))
         else
           result
         end
       end
-
     end
   end
 end

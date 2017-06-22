@@ -4,8 +4,7 @@ module Sprockets
   module Less
     module V4
       # Internal: Cache wrapper for Sprockets cache adapter. (Sprockets >= 3)
-      class CacheStore < Sprockets::Less::V3::CacheStore
-      end
+      class CacheStore < Sprockets::Less::V3::CacheStore; end
     end
   end
 end

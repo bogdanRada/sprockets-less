@@ -4,8 +4,7 @@ module Sprockets
       # Sprockets-aware Less functions
       module Functions
         def asset_data_url(path)
-          value = sprockets_context.asset_data_uri(path)
-          fetch_css_url(value)
+          fetch_css_url(sprockets_context.asset_data_uri(path))
         end
 
         def asset_path(path, options = {})
@@ -18,7 +17,7 @@ module Sprockets
 
         def font_path(source, options = {})
           if options[:from_url] || (options.is_a?(Hash) && options.keys.size > 0)
-           quote(sprockets_context.font_path(source, map_options(options)))
+            quote(sprockets_context.font_path(source, map_options(options)))
           else
             fetch_css_url(public_path(source))
           end
@@ -35,19 +34,17 @@ module Sprockets
         #
         def font_url(source, options = {})
           # Work with the Compass #font_url API
-          value = font_path(source, options)
-          verify_url_value(value, options)
+          verify_url_value(font_path(source, options), options)
         end
 
 
         def asset_url(path, options = {})
-          value = asset_path(path, options)
-          verify_url_value(value, options)
+          verify_url_value(asset_path(path, options), options)
         end
 
         def image_path(img, options = {})
           if options[:from_url] || (options.is_a?(Hash) && options.keys.size > 0)
-           value = quote(sprockets_context.image_path(img, map_options(options)))
+            value = quote(sprockets_context.image_path(img, map_options(options)))
           else
             value = fetch_css_url(public_path(img))
           end
@@ -98,12 +95,11 @@ module Sprockets
 
         def public_path(asset)
           if sprockets_context.respond_to?(:asset_paths)
-            sprockets_context.asset_paths.compute_public_path asset, defined?(Rails) ? ::Rails.application.config.assets.prefix : '/assets'
+            sprockets_context.asset_paths.compute_public_path(asset, defined?(Rails) ? ::Rails.application.config.assets.prefix : '/assets')
           else
             sprockets_context.path_to_asset(asset)
           end
         end
-
 
         def sprockets_context
           ::Less.Parser['sprockets_context']
@@ -111,6 +107,7 @@ module Sprockets
 
         def fetch_css_url(value ,options = {})
           new_value = !options[:unquote].nil? ? value : quote(value, options)
+
           "url(#{new_value})"
         end
 
@@ -138,9 +135,9 @@ module Sprockets
             new_key, new_value = yield(k, v)
             rv[new_key] = new_value
           end
+
           rv
         end
-
       end
     end
   end

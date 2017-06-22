@@ -17,12 +17,16 @@ module Sprockets
             imports << %(@import "#{relative_path}";\n)
           end
           return nil if engine_imports.empty?
-          ::Sass::Engine.new engine_imports, options.merge(
+          options = options.merge(
             filename: base_path.to_s,
             syntax: syntax,
             importer: self,
-            custom: { sprockets_context: context }
+            custom: {
+              sprockets_context: context
+            }
           )
+
+          ::Sass::Engine.new(engine_imports,options)
         end
 
         # Finds all of the assets using the given glob.
@@ -35,12 +39,14 @@ module Sprockets
             asset_requirable = asset_requirable?(context, pathname)
             imports << { file_url: pathname, path: path } if path != context.filename && asset_requirable
           end
+
           glob_files
         end
 
         def possible_files(context, path, base_path)
           filename = check_path_before_process(context, base_path)
           base_path = (filename.is_a?(Pathname) ? filename : Pathname.new(filename))
+
           super(context, path, base_path)
         end
 
@@ -56,6 +62,7 @@ module Sprockets
 
         def stat_of_pathname(context, pathname, _path)
           filename = check_path_before_process(context, pathname)
+
           context.environment.stat(filename)
         end
 
@@ -64,13 +71,13 @@ module Sprockets
           pathname = context.resolve(path)
           content_type = pathname.nil? ? nil : pathname.to_s.scan(/\?type\=(.*)/).flatten.compact.first unless pathname.nil?
           attributes = {}
+
           [content_type, attributes]
         end
 
         def get_engines_from_attributes(_context, _attributes)
-           []
-         end
-
+          []
+        end
 
         def get_context_transformers(context, content_type, path)
           available_transformers =  context.environment.transformers[content_type]
@@ -79,6 +86,7 @@ module Sprockets
           css_transformers = available_transformers.key?('text/css') ? available_transformers['text/css'] : []
           css_transformers = css_transformers.is_a?(Array) ? css_transformers : [css_transformers]
           additional_transformers = additional_transformers.concat(css_transformers)
+
           additional_transformers
         end
 
@@ -94,13 +102,12 @@ module Sprockets
           if processor.respond_to?(:processors)
             processor.processors = filter_all_processors(processor.processors)
           end
+
           super(processor, context, input, processors)
         end
 
         def filtered_processor_classes
-          classes = super
-          classes << Sprockets::YUICompressor if defined?(Sprockets::YUICompressor)
-          classes
+          super.tap { |classes| classes << Sprockets::YUICompressor if defined?(Sprockets::YUICompressor) }
         end
       end
     end

@@ -97,7 +97,7 @@ end
       str = str[(offset + 1)..-1]
     end
 
-    arr.uniq {|hash| hash[:match] }
+    arr.uniq { |hash| hash[:match] }
   end
 
   def parse_functions(less, options = {})
@@ -106,7 +106,7 @@ end
       function_regex =  /#{function_name}\(([^\)]*)\)/
       function_data = matches(less, function_regex)
       function_data.each do |hash|
-        captures = hash[:match].captures.map {|a| a.split(',').map {|b| b.gsub(/["']+/, '') } }.flatten.compact.uniq
+        captures = hash[:match].captures.map { |a| a.split(',').map { |b| b.gsub(/["']+/, '') } }.flatten.compact.uniq
         params = []
         captures.each do |param|
           if param.include?("@{")

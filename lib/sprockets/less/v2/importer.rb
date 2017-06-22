@@ -22,6 +22,7 @@ module Sprockets
 
         def fetch_all_dependencies(data, filename, less_options, css_options)
           process_dependencies(data, filename, less_options, css_options)
+
           [data, dependencies]
         end
 
@@ -29,16 +30,12 @@ module Sprockets
         def process_dependencies(data, filename, less_options, css_options)
           @context = context = less_options[:custom][:sprockets_context]
 
-          final_css = ''.dup
-          import_paths = fetch_import_paths(data)
-          import_paths.each do |path|
+          fetch_import_paths(data).each_with_object(''.dup) do |path, memo|
             css = find_relative(path, filename, less_options, css_options)
             data.gsub!(/^\s*@import\s*['"]#{Regexp.escape(path)}['"]\s*;/, css)
-            final_css << css
+            memo << css
           end
-          final_css
         end
-
 
         protected
 
@@ -49,6 +46,7 @@ module Sprockets
           else
             css = engine_from_path(path, base_path, less_options, css_options)
           end
+
           css.to_s
         end
 
@@ -71,22 +69,26 @@ module Sprockets
           rescue => e
             css = e.message =~ /is undefined/ ? data_to_parse : nil
           end
+
           css.nil? || css.empty? ? data_to_parse : css
         end
-
 
         def less_engine(data, filename, context,  less_options, css_options)
           if ::Less.const_defined? :Engine
             engine = ::Less::Engine.new(data)
           else
-            parser  = ::Less::Parser.new(less_options.merge(
-            filename: filename.to_s,
-            syntax: syntax,
-            importer: self,
-            custom: { sprockets_context: context }
-            ))
+            less_options = less_options.merge(
+              filename: filename.to_s,
+              syntax: syntax,
+              importer: self,
+              custom: {
+                sprockets_context: context
+              }
+            )
+            parser  = ::Less::Parser.new(less_options)
             engine = parser.parse(data)
           end
+
           engine.to_css(css_options)
         end
 
@@ -102,6 +104,7 @@ module Sprockets
           end
           return nil if engine_imports.empty?
           css = less_engine(engine_imports, base_path, context, less_options, css_options)
+
           css.nil? || css.empty? ? engine_imports : css
         end
 
@@ -115,6 +118,7 @@ module Sprockets
               return found if context.asset_requirable?(found)
             end
           end
+
           nil
         end
 
@@ -157,6 +161,7 @@ module Sprockets
 
           # Find base_path's root
           paths, root_path = add_root_to_possible_files(context, base_path, path, paths)
+
           [paths.compact, root_path]
         end
 
@@ -171,6 +176,7 @@ module Sprockets
             relative_path = base_path.relative_path_from(root_path).join path
             paths.unshift(relative_path, partialize_path(relative_path))
           end
+
           [paths, root_path]
         end
 
@@ -178,6 +184,7 @@ module Sprockets
         # Returns nil if the path is already to a partial.
         def partialize_path(path)
           return unless path.basename.to_s !~ /\A_/
+
           Pathname.new path.to_s.sub(/([^\/]+)\Z/, '_\1')
         end
 
@@ -193,12 +200,14 @@ module Sprockets
         def filtered_processor_classes
           classes = [Sprockets::Less::Utils.get_class_by_version('LessTemplate')]
           classes << Tilt::LessTemplate if defined?(Tilt::LessTemplate)
+
           classes
         end
 
         def content_type_of_path(context, path)
           attributes = context.environment.attributes_for(path)
           content_type = attributes.content_type
+
           [content_type, attributes]
         end
 
@@ -213,11 +222,12 @@ module Sprockets
         def get_engines_from_attributes(context, attributes)
           attributes.engines
         end
-        
+
         def get_all_processors_for_evaluate(context, content_type, attributes, path)
           engines = get_engines_from_attributes(context, attributes)
           preprocessors = get_context_preprocessors(context, content_type)
           additional_transformers = get_context_transformers(context, content_type, path)
+
           additional_transformers.reverse + preprocessors + engines.reverse
         end
 
@@ -240,10 +250,9 @@ module Sprockets
           content_type, attributes = content_type_of_path(context, path)
           processors = get_all_processors_for_evaluate(context, content_type, attributes, path)
           filter_all_processors(processors)
+
           evaluate_path_from_context(context, path, processors)
         end
-
-
       end
     end
   end
